@@ -288,3 +288,14 @@ This project follows a simple doctrine:
   <br /><br />
   <em>built from scratch. no frameworks. no shortcuts. just bytes.</em>
 </p>
+
+---
+
+## ⚠️ Disclaimer
+
+This project is built strictly for **educational and security research purposes**. It is intended to help learn ARM64 reverse engineering, binary analysis, and vulnerability research methodology.
+
+- This tool does not enable piracy, does not bypass DRM, and does not modify console firmware
+- Any vulnerabilities discovered should be reported through **responsible disclosure** to Nintendo
+- The author assumes no liability for misuse of this tool or any information derived from it
+- You are solely responsible for ensuring your use complies with all applicable laws and regulations
