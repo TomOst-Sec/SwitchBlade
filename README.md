@@ -227,7 +227,7 @@ nso.hexdump("text", 0, 128)  # 🔍 hex dump any section
   patches reveal what was broken. broken = exploitable on older versions.
 
   📋 STEP 5: REPORT
-  find bug ──▶ write report ──▶ responsible disclosure ──▶ career 🚀
+  find bug ──▶ write report ──▶ responsible disclosure 
 ```
 
 ---
