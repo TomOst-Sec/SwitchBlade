@@ -3,11 +3,13 @@
 import os, glob
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from loader import NSO
 from analyzer import scan_syscalls, get_service_name, target_value
 from cfg import disassemble, find_functions, find_function_bounds, build_cfg, find_xrefs
 
-NSO_DIR = os.environ.get("NSO_DIR", os.path.expanduser("~/Downloads/Firmware 20.1.5/SwitchBlade"))
+NSO_DIR = os.environ.get("NSO_DIR", "nso/")
 
 DB = {}  # service_name → precomputed analysis
 
@@ -48,6 +50,11 @@ def get_service(name):
         raise HTTPException(404, f"service '{name}' not found")
     return DB[name]
 
+
+
+@app.get("/")
+def index():
+    return FileResponse("ui/index.html")
 
 
 @app.get("/api/services")

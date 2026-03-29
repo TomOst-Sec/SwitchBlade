@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SwitchBlade</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #0a0a0a; color: #c8c8c8; font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace; font-size: 13px; height: 100vh; overflow: hidden; }
+
+/* header */
+#header { background: #111; border-bottom: 1px solid #222; padding: 8px 16px; display: flex; align-items: center; justify-content: space-between; height: 40px; }
+#header h1 { font-size: 14px; color: #e60012; letter-spacing: 2px; }
+#header .stats { color: #666; font-size: 11px; }
+
+/* three panel layout */
+#panels { display: flex; height: calc(100vh - 40px); }
+
+/* left panel — services */
+#services-panel { width: 260px; border-right: 1px solid #1a1a1a; overflow-y: auto; flex-shrink: 0; }
+#services-panel .panel-header { padding: 8px 12px; background: #111; border-bottom: 1px solid #1a1a1a; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; }
+.service-item { padding: 6px 12px; cursor: pointer; border-bottom: 1px solid #111; display: flex; align-items: center; gap: 8px; }
+.service-item:hover { background: #151515; }
+.service-item.active { background: #1a1012; border-left: 2px solid #e60012; }
+.service-item .name { flex: 1; color: #ddd; }
+.service-item .tv { font-size: 11px; color: #666; }
+.threat-bar { width: 60px; height: 6px; background: #1a1a1a; border-radius: 3px; overflow: hidden; }
+.threat-fill { height: 100%; border-radius: 3px; }
+
+/* middle panel — functions */
+#functions-panel { width: 300px; border-right: 1px solid #1a1a1a; overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column; }
+#functions-panel .panel-header { padding: 8px 12px; background: #111; border-bottom: 1px solid #1a1a1a; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; }
+#func-search { width: 100%; background: #0e0e0e; border: 1px solid #222; color: #ccc; padding: 6px 10px; font-family: inherit; font-size: 12px; outline: none; }
+#func-search:focus { border-color: #e60012; }
+#func-list { overflow-y: auto; flex: 1; }
+.func-item { padding: 5px 12px; cursor: pointer; border-bottom: 1px solid #0e0e0e; display: flex; justify-content: space-between; }
+.func-item:hover { background: #151515; }
+.func-item.active { background: #1a1012; border-left: 2px solid #e60012; }
+.func-item .addr { color: #4a9eff; }
+.func-item .size { color: #555; font-size: 11px; }
+
+/* right panel — disassembly */
+#disasm-panel { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+#disasm-panel .panel-header { padding: 8px 12px; background: #111; border-bottom: 1px solid #1a1a1a; color: #666; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; position: sticky; top: 0; display: flex; justify-content: space-between; align-items: center; }
+#disasm-list { overflow-y: auto; flex: 1; padding: 4px 0; }
+.insn { padding: 2px 12px; display: flex; gap: 16px; line-height: 1.6; }
+.insn:hover { background: #111; }
+.insn .addr { color: #4a9eff; min-width: 80px; }
+.insn .hex { color: #444; min-width: 80px; }
+.insn .mnem { min-width: 70px; }
+.insn .ops { color: #999; }
+/* instruction highlighting */
+.insn.svc .mnem { color: #ff4444; font-weight: bold; }
+.insn.svc .ops { color: #ff6666; }
+.insn.svc { background: #1a0a0a; }
+.insn.branch .mnem { color: #ffaa00; }
+.insn.call .mnem { color: #44cc44; }
+.insn.call .ops { color: #66dd66; }
+.insn.ret .mnem { color: #ff6688; font-weight: bold; }
+.insn.load-store .mnem { color: #cc88ff; }
+
+/* cfg button */
+.cfg-btn { background: #1a1a1a; border: 1px solid #333; color: #aaa; padding: 3px 10px; cursor: pointer; font-family: inherit; font-size: 11px; border-radius: 3px; }
+.cfg-btn:hover { background: #222; color: #fff; border-color: #e60012; }
+
+/* cfg modal */
+#cfg-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 100; justify-content: center; align-items: center; }
+#cfg-modal.visible { display: flex; }
+#cfg-container { background: #0a0a0a; border: 1px solid #222; border-radius: 4px; width: 80vw; height: 80vh; overflow: auto; position: relative; padding: 20px; }
+#cfg-close { position: absolute; top: 10px; right: 14px; color: #666; cursor: pointer; font-size: 18px; z-index: 2; }
+#cfg-close:hover { color: #e60012; }
+.cfg-node { background: #111; border: 1px solid #2a2a2a; border-radius: 4px; padding: 8px; margin: 8px; font-size: 11px; display: inline-block; }
+.cfg-node .cfg-addr { color: #4a9eff; font-weight: bold; margin-bottom: 4px; }
+.cfg-node .cfg-target { color: #666; font-size: 10px; }
+
+/* empty states */
+.empty { color: #333; padding: 40px; text-align: center; font-size: 12px; }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: #0a0a0a; }
+::-webkit-scrollbar-thumb { background: #222; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #333; }
+
+/* service stats row */
+.service-stats { display: flex; gap: 12px; padding: 8px 12px; background: #0e0e0e; border-bottom: 1px solid #1a1a1a; font-size: 11px; color: #555; }
+.service-stats span { color: #888; }
+</style>
+</head>
+<body>
+
+<div id="header">
+  <h1>SWITCHBLADE</h1>
+  <div class="stats" id="global-stats">loading...</div>
+</div>
+
+<div id="panels">
+  <!-- left: services -->
+  <div id="services-panel">
+    <div class="panel-header">services</div>
+    <div id="services-list"></div>
+  </div>
+
+  <!-- middle: functions -->
+  <div id="functions-panel">
+    <div class="panel-header" id="func-header">functions</div>
+    <input type="text" id="func-search" placeholder="filter functions by address...">
+    <div class="service-stats" id="service-stats" style="display:none"></div>
+    <div id="func-list"><div class="empty">select a service</div></div>
+  </div>
+
+  <!-- right: disassembly -->
+  <div id="disasm-panel">
+    <div class="panel-header">
+      <span id="disasm-header">disassembly</span>
+      <button class="cfg-btn" id="cfg-btn" style="display:none" onclick="showCFG()">CFG</button>
+    </div>
+    <div id="disasm-list"><div class="empty">select a function</div></div>
+  </div>
+</div>
+
+<!-- cfg modal -->
+<div id="cfg-modal">
+  <div id="cfg-container">
+    <div id="cfg-close" onclick="closeCFG()">&times;</div>
+    <div id="cfg-content"></div>
+  </div>
+</div>
+
+<script>
+const API = '';
+let currentService = null;
+let currentFunc = null;
+
+// — fetch helpers —
+async function api(path) {
+  const r = await fetch(API + path);
+  if (!r.ok) throw new Error(r.statusText);
+  return r.json();
+}
+
+// — threat bar color —
+function threatColor(tv) {
+  if (tv >= 9) return '#e60012';
+  if (tv >= 7) return '#ff6600';
+  if (tv >= 5) return '#ffaa00';
+  if (tv >= 3) return '#44aa44';
+  return '#336';
+}
+
+// — load services —
+async function loadServices() {
+  const services = await api('/api/services');
+  services.sort((a, b) => b.target_value - a.target_value || b.size - a.size);
+
+  const total_funcs = services.reduce((s, x) => s + x.function_count, 0);
+  const total_svcs = services.reduce((s, x) => s + x.syscall_count, 0);
+  document.getElementById('global-stats').textContent =
+    `${services.length} services | ${total_funcs.toLocaleString()} functions | ${total_svcs.toLocaleString()} syscalls`;
+
+  const list = document.getElementById('services-list');
+  list.innerHTML = services.map(s => `
+    <div class="service-item" data-name="${s.name}" onclick="selectService('${s.name}')">
+      <div class="threat-bar"><div class="threat-fill" style="width:${s.target_value * 10}%;background:${threatColor(s.target_value)}"></div></div>
+      <div class="name">${s.name}</div>
+      <div class="tv">${s.target_value}/10</div>
+    </div>
+  `).join('');
+}
+
+// — select service —
+async function selectService(name) {
+  currentService = name;
+  currentFunc = null;
+
+  // highlight active
+  document.querySelectorAll('.service-item').forEach(el => el.classList.toggle('active', el.dataset.name === name));
+
+  // load detail + functions
+  const [detail, functions, syscalls] = await Promise.all([
+    api(`/api/services/${name}`),
+    api(`/api/services/${name}/functions`),
+    api(`/api/services/${name}/syscalls`),
+  ]);
+
+  // stats row
+  const stats = document.getElementById('service-stats');
+  stats.style.display = 'flex';
+  stats.innerHTML = `
+    <span>${detail.functions} funcs</span>
+    <span>${detail.syscalls} syscalls</span>
+    <span>${(detail.size / 1024).toFixed(0)} KB</span>
+    <span>threat: ${detail.target_value}/10</span>
+  `;
+
+  document.getElementById('func-header').textContent = `functions — ${name}`;
+
+  // render function list
+  renderFunctions(functions);
+
+  // clear disasm
+  document.getElementById('disasm-list').innerHTML = '<div class="empty">select a function</div>';
+  document.getElementById('disasm-header').textContent = 'disassembly';
+  document.getElementById('cfg-btn').style.display = 'none';
+
+  // setup search
+  document.getElementById('func-search').value = '';
+  document.getElementById('func-search').oninput = (e) => {
+    const q = e.target.value.toLowerCase();
+    const filtered = functions.filter(f => f.addr.toLowerCase().includes(q));
+    renderFunctions(filtered);
+  };
+}
+
+function renderFunctions(functions) {
+  const list = document.getElementById('func-list');
+  if (functions.length === 0) {
+    list.innerHTML = '<div class="empty">no functions found</div>';
+    return;
+  }
+  list.innerHTML = functions.map(f => `
+    <div class="func-item" data-addr="${f.addr}" onclick="selectFunction('${f.addr}')">
+      <span class="addr">sub_${f.addr}</span>
+      <span class="size">${f.size}B</span>
+    </div>
+  `).join('');
+}
+
+// — select function —
+async function selectFunction(addr) {
+  currentFunc = addr;
+
+  // highlight
+  document.querySelectorAll('.func-item').forEach(el => el.classList.toggle('active', el.dataset.addr === addr));
+
+  const disasm = await api(`/api/services/${currentService}/functions/${addr}/disasm`);
+
+  document.getElementById('disasm-header').textContent = `sub_${addr}  (${disasm.length} instructions)`;
+  document.getElementById('cfg-btn').style.display = 'inline-block';
+
+  const branches = new Set(['b', 'bl', 'br', 'blr', 'ret', 'cbz', 'cbnz', 'tbz', 'tbnz']);
+
+  const list = document.getElementById('disasm-list');
+  list.innerHTML = disasm.map(i => {
+    let cls = 'insn';
+    if (i.mnemonic === 'svc') cls += ' svc';
+    else if (i.mnemonic === 'ret') cls += ' ret';
+    else if (i.mnemonic === 'bl' || i.mnemonic === 'blr') cls += ' call';
+    else if (i.mnemonic.startsWith('b') && (i.mnemonic === 'b' || i.mnemonic.startsWith('b.') || branches.has(i.mnemonic))) cls += ' branch';
+    else if (i.mnemonic.startsWith('ldr') || i.mnemonic.startsWith('str') || i.mnemonic === 'stp' || i.mnemonic === 'ldp') cls += ' load-store';
+    return `<div class="${cls}">
+      <span class="addr">${i.addr}</span>
+      <span class="hex">${i.hex}</span>
+      <span class="mnem">${i.mnemonic}</span>
+      <span class="ops">${i.operands}</span>
+    </div>`;
+  }).join('');
+}
+
+// — CFG modal —
+async function showCFG() {
+  if (!currentService || !currentFunc) return;
+  const cfg = await api(`/api/services/${currentService}/functions/${currentFunc}/cfg`);
+  const modal = document.getElementById('cfg-modal');
+  const content = document.getElementById('cfg-content');
+
+  // collect all nodes and edges
+  const entries = Object.entries(cfg);
+  if (entries.length === 0) {
+    content.innerHTML = '<div class="empty">no branches in this function</div>';
+    modal.classList.add('visible');
+    return;
+  }
+
+  // build SVG cfg
+  const nodes = {};
+  const edges = [];
+  let allAddrs = new Set();
+
+  entries.forEach(([addr, targets]) => {
+    allAddrs.add(addr);
+    targets.forEach(t => { allAddrs.add(t); edges.push([addr, t]); });
+  });
+
+  const sortedAddrs = [...allAddrs].sort();
+  const nodeH = 36, nodeW = 140, padX = 40, padY = 50;
+  const cols = Math.min(4, Math.ceil(Math.sqrt(sortedAddrs.length)));
+
+  sortedAddrs.forEach((addr, i) => {
+    const col = i % cols;
+    const row = Math.floor(i / cols);
+    nodes[addr] = { x: padX + col * (nodeW + padX), y: padY + row * (nodeH + padY), addr };
+  });
+
+  const svgW = (nodeW + padX) * cols + padX;
+  const svgH = (nodeH + padY) * Math.ceil(sortedAddrs.length / cols) + padY;
+
+  let svg = `<svg width="${svgW}" height="${svgH}" xmlns="http://www.w3.org/2000/svg">`;
+  svg += '<defs><marker id="arrow" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0 L10,5 L0,10 Z" fill="#e60012"/></marker></defs>';
+
+  // edges
+  edges.forEach(([from, to]) => {
+    const a = nodes[from], b = nodes[to];
+    if (a && b) {
+      svg += `<line x1="${a.x + nodeW/2}" y1="${a.y + nodeH}" x2="${b.x + nodeW/2}" y2="${b.y}" stroke="#333" stroke-width="1.5" marker-end="url(#arrow)"/>`;
+    }
+  });
+
+  // nodes
+  sortedAddrs.forEach(addr => {
+    const n = nodes[addr];
+    const isSource = cfg[addr] !== undefined;
+    const fill = isSource ? '#151515' : '#0e0e0e';
+    const stroke = isSource ? '#e60012' : '#2a2a2a';
+    svg += `<rect x="${n.x}" y="${n.y}" width="${nodeW}" height="${nodeH}" rx="4" fill="${fill}" stroke="${stroke}"/>`;
+    svg += `<text x="${n.x + nodeW/2}" y="${n.y + nodeH/2 + 4}" text-anchor="middle" fill="#4a9eff" font-size="11" font-family="monospace">${addr}</text>`;
+  });
+
+  svg += '</svg>';
+  content.innerHTML = svg;
+  modal.classList.add('visible');
+}
+
+function closeCFG() {
+  document.getElementById('cfg-modal').classList.remove('visible');
+}
+
+// close on escape
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeCFG();
+});
+
+// keyboard nav
+document.addEventListener('keydown', e => {
+  if (e.target.tagName === 'INPUT') return;
+  const items = document.querySelectorAll(
+    e.key === 'ArrowUp' || e.key === 'ArrowDown'
+      ? (currentFunc ? '.func-item' : '.service-item')
+      : ''
+  );
+  if (!items.length) return;
+
+  const active = document.querySelector(currentFunc ? '.func-item.active' : '.service-item.active');
+  const idx = [...items].indexOf(active);
+
+  if (e.key === 'ArrowDown' && idx < items.length - 1) {
+    items[idx + 1].click();
+    items[idx + 1].scrollIntoView({ block: 'nearest' });
+    e.preventDefault();
+  } else if (e.key === 'ArrowUp' && idx > 0) {
+    items[idx - 1].click();
+    items[idx - 1].scrollIntoView({ block: 'nearest' });
+    e.preventDefault();
+  }
+});
+
+// — init —
+loadServices();
+</script>
+</body>
+</html>
