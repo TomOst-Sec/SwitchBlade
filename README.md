@@ -113,6 +113,46 @@ b'NSO0'  version=0  flags=56
 
 > 🔬 That's real Nintendo ARM64 machine code from the Switch's SSL/TLS service.
 
+### Analyze functions and control flow
+
+```bash
+python3 cfg.py /path/to/ssl.nso
+```
+
+```
+found 7118 functions
+function at 0x100 - 0x150 (size 80 bytes)
+function at 0x150 - 0x4e0 (size 912 bytes)
+...
+CFG for function at 0x100:
+  0x110 -> 0x114
+  0x118 -> 0x134, 0x11c
+  0x130 -> 0x4ab0
+  0x140 ->
+
+xrefs: 45043 calls, 5885 data refs
+```
+
+### Scan syscalls across all binaries
+
+```bash
+python3 analyzer.py /path/to/nso_directory/
+```
+
+### Launch the web UI
+
+Requires extracted `.nso` files (use [hactool](https://github.com/SciresM/hactool) + prod.keys to extract from firmware `.nca` files).
+
+```bash
+pip install fastapi uvicorn capstone
+```
+
+```bash
+NSO_DIR="/path/to/your/extracted/nsos" uvicorn api:app --reload
+```
+
+Then open `http://localhost:8000` in your browser. First load takes a few minutes — it disassembles all 74 binaries (~261MB). Once you see `loaded 74 services` in the terminal, the UI is ready.
+
 ### 📚 Use as a library
 
 ```python
