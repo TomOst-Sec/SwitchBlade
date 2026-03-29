@@ -281,13 +281,6 @@ This project follows a simple doctrine:
 | 🔑 | [hactool](https://github.com/SciresM/hactool) | NCA decryption tool |
 | 🌐 | [Atmosphere-NX](https://github.com/Atmosphere-NX/Atmosphere) | Switch custom firmware (OS internals reference) |
 
----
-
-<p align="center">
-  <strong>🗡️ the tool finds the bug. the bug builds the career. 🚀</strong>
-  <br /><br />
-  <em>built from scratch. no frameworks. no shortcuts. just bytes.</em>
-</p>
 
 ---
 
