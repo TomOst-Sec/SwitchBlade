@@ -60,10 +60,14 @@ def target_value(name, syscalls):
     # 1 — everything else
     return 1
 
+
+
 def print_report(name, syscalls):
     print(f"\n{name}: {len(syscalls)} syscalls")
     for addr, num, svc_name in syscalls:
         print(f"  {addr:08x}: SVC #0x{num:02x}  {svc_name}")
+
+
 
 def print_summary(all_results):
     print(f"\n{'='*60}")
@@ -73,6 +77,9 @@ def print_summary(all_results):
     for name, syscalls, tv in sorted(rated, key=lambda x: (-x[2], -len(x[1]))):
         bar = "█" * tv + "░" * (10 - tv)
         print(f"  [{bar}] {tv:2d}/10  {len(syscalls):3d} svcs  {name}")
+
+
+
 
 if __name__ == "__main__":
     path = sys.argv[1]
@@ -90,3 +97,4 @@ if __name__ == "__main__":
         syscalls = scan_syscalls(nso)
         name = get_service_name(nso) or os.path.basename(path)
         print_report(name, syscalls)
+
