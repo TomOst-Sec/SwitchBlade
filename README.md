@@ -178,8 +178,8 @@ nso.hexdump("text", 0, 128)  # 🔍 hex dump any section
 | 🔬 | **M2: Decoder** | `decoder.py` | ✅ Done | 4 bytes -> ARM64 assembly instruction (hand-built + Capstone) |
 | 📡 | **M3: Syscalls** | `analyzer.py` | ✅ Done | Find all SVC instructions, label with Horizon OS names, rank targets 1-10 |
 | 🧠 | **M4: Analyzer** | `cfg.py` | ✅ Done | Discover functions, build control flow graphs, xrefs |
-| 🌐 | **M5: API** | `api.py` | ⬜ Todo | FastAPI serving all 74 services as JSON |
-| 🎨 | **M6: UI** | `ui/` | ⬜ Todo | Web-based service browser, disasm view, CFG renderer |
+| 🌐 | **M5: API** | `api.py` | ✅ Done | FastAPI serving all 74 services as JSON |
+| 🎨 | **M6: UI** | `ui/index.html` | ✅ Done | Web-based service browser, disasm view, CFG renderer |
 | 🔄 | **M7: Diff** | `diff.py` | ⬜ Todo | Compare firmware versions, find patched functions |
 | 🤖 | **M8: Scanner** | `scanner.py` | ⬜ Todo | AI-powered vulnerability pattern detection |
 | 📝 | **M9: Decompiler** | `decompiler.py` | ⬜ Todo | ARM64 -> C pseudocode |
@@ -193,8 +193,8 @@ nso.hexdump("text", 0, 128)  # 🔍 hex dump any section
 ✅ M2  DECODER        "i can read ARM64 machine code as assembly"
 ✅ M3  SYSCALLS       "i know every kernel call in every binary"
 ✅ M4  ANALYZER       "i can find every function and trace its control flow"
-⬜ M5  API + BROWSER  "i can explore all 74 services in my browser"
-⬜ M6  UI + GRAPH     "i can see function graphs and navigate visually"
+✅ M5  API + BROWSER  "i can explore all 74 services in my browser"
+✅ M6  UI + GRAPH     "i can see function graphs and navigate visually"
 ⬜ M7  DIFF ENGINE    "i can see what Nintendo patched between versions"
 ⬜ M8  VULN SCANNER   "AI flags suspicious functions across all binaries"
 ⬜ M9  DECOMPILER     "i can read ARM64 as C code"
