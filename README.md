@@ -77,7 +77,8 @@ It's not a plugin for Ghidra. It's not a wrapper around Capstone. Every componen
 🗡️ switchblade/
   📄 loader.py       ◀── M1: parse NSO header, extract .text/.rodata/.data
   📄 decoder.py      ◀── M2: 4 bytes ──▶ ARM64 instruction
-  📄 analyzer.py     ◀── M3-M4: find functions, build CFG, label syscalls
+  📄 analyzer.py     ◀── M3: find syscalls, label with Horizon OS names, rank targets
+  📄 cfg.py          ◀── M4: function discovery, CFG, cross-references
   📄 api.py          ◀── M5: FastAPI serving JSON
   📄 diff.py         ◀── M7: diff two firmware versions
   📄 scanner.py      ◀── M8: pattern + AI vuln scanner
@@ -176,7 +177,7 @@ nso.hexdump("text", 0, 128)  # 🔍 hex dump any section
 | 📂 | **M1: Loader** | `loader.py` | ✅ Done | Parse NSO header, extract .text/.rodata/.data sections |
 | 🔬 | **M2: Decoder** | `decoder.py` | ✅ Done | 4 bytes -> ARM64 assembly instruction (hand-built + Capstone) |
 | 📡 | **M3: Syscalls** | `analyzer.py` | ✅ Done | Find all SVC instructions, label with Horizon OS names, rank targets 1-10 |
-| 🧠 | **M4: Analyzer** | `analyzer.py` | ⬜ Todo | Discover functions, build control flow graphs, xrefs |
+| 🧠 | **M4: Analyzer** | `cfg.py` | ✅ Done | Discover functions, build control flow graphs, xrefs |
 | 🌐 | **M5: API** | `api.py` | ⬜ Todo | FastAPI serving all 74 services as JSON |
 | 🎨 | **M6: UI** | `ui/` | ⬜ Todo | Web-based service browser, disasm view, CFG renderer |
 | 🔄 | **M7: Diff** | `diff.py` | ⬜ Todo | Compare firmware versions, find patched functions |
@@ -191,7 +192,7 @@ nso.hexdump("text", 0, 128)  # 🔍 hex dump any section
 ✅ M1  LOADER         "i can open any Switch binary and see its guts"
 ✅ M2  DECODER        "i can read ARM64 machine code as assembly"
 ✅ M3  SYSCALLS       "i know every kernel call in every binary"
-⬜ M4  ANALYZER       "i can find every function and trace its control flow"
+✅ M4  ANALYZER       "i can find every function and trace its control flow"
 ⬜ M5  API + BROWSER  "i can explore all 74 services in my browser"
 ⬜ M6  UI + GRAPH     "i can see function graphs and navigate visually"
 ⬜ M7  DIFF ENGINE    "i can see what Nintendo patched between versions"
