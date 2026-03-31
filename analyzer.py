@@ -15,7 +15,12 @@ def get_service_name(nso):
             current += bytes([b])
         else:
             if len(current) >= 4:
-                s = current.decode()
+                try:
+                   s = current.decode()
+                except:
+                   current=b''
+                   continue
+                       
                 if '.nss' in s and 'nnSdk' not in s:
                     # strip build paths: D:\home\jenkins\...\ssl.nss → ssl
                     s = s.split('\\')[-1].split('/')[-1]
@@ -27,6 +32,9 @@ def scan_syscalls(nso):
     md = Cs(CS_ARCH_ARM64, CS_MODE_ARM)
     md.skipdata = True
     results = []
+    if not hasattr(nso, "text") or not nso.text:
+        print("⚠️ Warning: Empty or missing .text section")
+        return results
     for inst in md.disasm(nso.text, 0):
         if inst.mnemonic == "svc":
             num = int(inst.op_str.lstrip('#'), 16)
