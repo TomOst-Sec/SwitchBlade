@@ -32,7 +32,7 @@ def decode(inst):
     if ((inst >> 25) & 0x3F) == 0x14:        return "STP/LDP"  # bits [30:25] = 010100 → LDP/STP family
 
     # system
-    if ((inst >> 22) & 0x3FF) == 0x354:      return "SVC"      # supervisor call — syscall to the Switch kernel
+    if (inst >> 21) == 0x6A0:                return "SVC"      # supervisor call — syscall to the Switch kernel
 
     return "???"
 
@@ -41,10 +41,11 @@ def disasm(text, start=0, count=50):
     iterates in 4-byte increments since each ARM64 instruction is exactly 4 bytes.
     struct.unpack("<I", ...) converts 4 little-endian bytes into a 32-bit unsigned int."""
     results = []
-    for i in range(start, min(start + count * 4, len(text)), 4):
+    for i in range(start, min(start + count * 4, len(text)), 4): # iterate over the text in 4-byte steps 
         inst = struct.unpack("<I", text[i:i+4])[0] # convert 4 bytes to int — "<I" = little-endian unsigned int
         results.append((i, inst, decode(inst)))     # (offset, raw instruction, decoded name)
-    return results
+    return results # returns a list of tuples containing the offset, raw instruction, and decoded name for each instruction in the specified range
+
 
 if __name__ == "__main__":                                                                                                                                                                            
       nso = NSO(sys.argv[1])                                                           
