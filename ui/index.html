@@ -88,6 +88,36 @@ body { background: #0a0a0a; color: #c8c8c8; font-family: 'JetBrains Mono', 'Fira
 .dom-tree-indent .tree-pipe { color: #333; }
 
 
+/* decompiled code */
+.decomp-line { padding: 1px 12px; font-size: 13px; line-height: 1.5; white-space: pre; }
+.decomp-line:hover { background: #111; }
+.decomp-line .kw { color: #cc7832; }
+.decomp-line .fn { color: #44cc44; }
+.decomp-line .lbl { color: #e60012; font-weight: bold; }
+.decomp-line .num { color: #6897bb; }
+.decomp-line .cmt { color: #555; }
+.decomp-line .typ { color: #cc88ff; }
+.decomp-line .svc { color: #ff4444; font-weight: bold; }
+
+/* scan findings */
+.finding { padding: 4px 12px; display: flex; gap: 10px; border-bottom: 1px solid #0e0e0e; align-items: center; }
+.finding:hover { background: #111; cursor: pointer; }
+.finding .sev { font-size: 10px; font-weight: bold; min-width: 36px; padding: 2px 6px; border-radius: 3px; text-align: center; }
+.finding .sev.crit { background: #3a0a0a; color: #ff4444; }
+.finding .sev.high { background: #3a1a0a; color: #ff8800; }
+.finding .sev.med { background: #2a2a0a; color: #ffaa00; }
+.finding .sev.low { background: #0a2a0a; color: #44aa44; }
+.finding .sev.info { background: #0a0a2a; color: #4488ff; }
+.finding .f-addr { color: #4a9eff; min-width: 80px; font-size: 12px; }
+.finding .f-desc { color: #ccc; font-size: 12px; }
+
+/* function flag dot */
+.func-item .flag { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; }
+.func-item .flag.crit { background: #ff4444; }
+.func-item .flag.high { background: #ff8800; }
+.func-item .flag.med { background: #ffaa00; }
+.func-item .flag.low { background: #44aa44; }
+
 /* empty states */
 .empty { color: #333; padding: 40px; text-align: center; font-size: 12px; }
 
@@ -133,6 +163,8 @@ body { background: #0a0a0a; color: #c8c8c8; font-family: 'JetBrains Mono', 'Fira
         <button class="tab-btn" data-view="cfg" onclick="switchView('cfg')">CFG</button>
         <button class="tab-btn" data-view="domtree" onclick="switchView('domtree')">DOM</button>
         <button class="tab-btn" data-view="xrefs" onclick="switchView('xrefs')">XREFS</button>
+        <button class="tab-btn" data-view="decomp" onclick="switchView('decomp')">C</button>
+        <button class="tab-btn" data-view="scan" onclick="switchView('scan')">SCAN</button>
       </div>
     </div>
     <div id="disasm-list"><div class="empty">select a function</div></div>
@@ -144,6 +176,7 @@ body { background: #0a0a0a; color: #c8c8c8; font-family: 'JetBrains Mono', 'Fira
 const API = '';
 let currentService = null;
 let currentFunc = null;
+let currentScanData = {};
 
 // — fetch helpers —
 async function api(path) {
@@ -189,12 +222,15 @@ async function selectService(name) {
   // highlight active
   document.querySelectorAll('.service-item').forEach(el => el.classList.toggle('active', el.dataset.name === name));
 
-  // load detail + functions
-  const [detail, functions, syscalls] = await Promise.all([
+  // load detail + functions + scan
+  const [detail, functions, scanData] = await Promise.all([
     api(`/api/services/${name}`),
     api(`/api/services/${name}/functions`),
-    api(`/api/services/${name}/syscalls`),
+    api(`/api/services/${name}/scan`),
   ]);
+
+  currentScanData = {};
+  scanData.forEach(s => { currentScanData[s.func] = s.findings; });
 
   // stats row
   const stats = document.getElementById('service-stats');
@@ -231,12 +267,18 @@ function renderFunctions(functions) {
     list.innerHTML = '<div class="empty">no functions found</div>';
     return;
   }
-  list.innerHTML = functions.map(f => `
-    <div class="func-item" data-addr="${f.addr}" onclick="selectFunction('${f.addr}')">
-      <span class="addr">sub_${f.addr}</span>
-      <span class="size">${f.size}B</span>
-    </div>
-  `).join('');
+  list.innerHTML = functions.map(f => {
+    const findings = currentScanData[f.addr] || [];
+    const maxSev = findings.length ? Math.max(...findings.map(h => h.severity)) : 0;
+    const fc = maxSev >= 5 ? 'crit' : maxSev >= 4 ? 'high' : maxSev >= 3 ? 'med' : maxSev >= 2 ? 'low' : '';
+    const dot = fc ? `<span class="flag ${fc}"></span>` : '';
+    return `
+      <div class="func-item" data-addr="${f.addr}" onclick="selectFunction('${f.addr}')">
+        <span class="addr">sub_${f.addr}</span>
+        ${dot}
+        <span class="size">${f.size}B</span>
+      </div>`;
+  }).join('');
 }
 
 // — select function —
@@ -269,6 +311,10 @@ function switchView(view) {
     renderDomtreeView(container);
   } else if (view === 'xrefs') {
     renderXrefsView(container);
+  } else if (view === 'decomp') {
+    renderDecompView(container);
+  } else if (view === 'scan') {
+    renderScanView(container);
   }
 }
 
@@ -418,6 +464,54 @@ async function renderXrefsView(container) {
   }
 
   container.innerHTML = html;
+}
+
+// — decompile view —
+function escapeHtml(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+function highlightC(line) {
+  return line
+    .replace(/(\/\*.*?\*\/)/g, '<span class="cmt">$1</span>')
+    .replace(/\b(if|goto|return)\b/g, '<span class="kw">$1</span>')
+    .replace(/\b(sub_[0-9a-f]+)/g, '<span class="fn">$1</span>')
+    .replace(/(loc_[0-9a-f]+):/g, '<span class="lbl">$1</span>:')
+    .replace(/\b(0x[0-9a-f]+)\b/g, '<span class="num">$1</span>')
+    .replace(/\b(uint\d+_t|int\d+_t|int64_t|uint64_t)\b/g, '<span class="typ">$1</span>')
+    .replace(/\b(svc\w+)\b/g, '<span class="svc">$1</span>');
+}
+async function renderDecompView(container) {
+  if (!currentService || !currentFunc) return;
+  const lines = await api(`/api/services/${currentService}/functions/${currentFunc}/decompile`);
+  container.innerHTML = lines.map(line => {
+    const h = highlightC(escapeHtml(line));
+    return `<div class="decomp-line">${h}</div>`;
+  }).join('');
+}
+
+// — scan view —
+async function renderScanView(container) {
+  if (!currentService) { container.innerHTML = '<div class="empty">select a service</div>'; return; }
+  const sevName = {5:'crit',4:'high',3:'med',2:'low',1:'info'};
+  const sevTag = {5:'CRIT',4:'HIGH',3:'MED',2:'LOW',1:'INFO'};
+  let findings = [];
+  if (currentFunc && currentScanData[currentFunc]) {
+    findings = currentScanData[currentFunc];
+  } else if (!currentFunc) {
+    Object.values(currentScanData).forEach(f => findings = findings.concat(f));
+  }
+  if (!findings.length) {
+    container.innerHTML = '<div class="empty">no findings' + (currentFunc ? ' for this function' : '') + '</div>';
+    return;
+  }
+  findings.sort((a,b) => b.severity - a.severity);
+  container.innerHTML = `<div class="xref-summary">${findings.length} findings</div>` +
+    findings.map(f => `
+      <div class="finding">
+        <span class="sev ${sevName[f.severity]}">${sevTag[f.severity]}</span>
+        <span class="f-addr">${f.addr}</span>
+        <span class="f-desc">${f.desc}</span>
+      </div>`).join('');
 }
 
 // keyboard nav

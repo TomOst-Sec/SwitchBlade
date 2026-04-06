@@ -226,9 +226,9 @@ nso.hexdump("text", 0, 128)  # 🔍 hex dump any section
 | 🧠 | **M4: Analyzer** | `cfg.py` | ✅ Done | Discover functions, build control flow graphs, xrefs |
 | 🌐 | **M5: API** | `api.py` | ✅ Done | FastAPI serving all 74 services as JSON |
 | 🎨 | **M6: UI** | `ui/index.html` | ✅ Done | Web-based service browser, disasm view, CFG renderer |
-| 🔄 | **M7: Diff** | `diff.py` | ⬜ Todo | Compare firmware versions, find patched functions |
-| 🤖 | **M8: Scanner** | `scanner.py` | ⬜ Todo | AI-powered vulnerability pattern detection |
-| 📝 | **M9: Decompiler** | `decompiler.py` | ⬜ Todo | ARM64 -> C pseudocode |
+| 🔄 | **M7: Diff** | `diff.py` | ✅ Done | Compare firmware versions, find patched functions |
+| 🤖 | **M8: Scanner** | `scanner.py` | ✅ Done | AI-powered vulnerability pattern detection |
+| 📝 | **M9: Decompiler** | `decompiler.py` | ✅ Done | ARM64 -> C pseudocode |
 
 ---
 
@@ -241,9 +241,9 @@ nso.hexdump("text", 0, 128)  # 🔍 hex dump any section
 ✅ M4  ANALYZER       "i can find every function and trace its control flow"
 ✅ M5  API + BROWSER  "i can explore all 74 services in my browser"
 ✅ M6  UI + GRAPH     "i can see function graphs and navigate visually"
-⬜ M7  DIFF ENGINE    "i can see what Nintendo patched between versions"
-⬜ M8  VULN SCANNER   "AI flags suspicious functions across all binaries"
-⬜ M9  DECOMPILER     "i can read ARM64 as C code"
+✅ M7  DIFF ENGINE    "i can see what Nintendo patched between versions"
+✅ M8  VULN SCANNER   "AI flags suspicious functions across all binaries"
+✅ M9  DECOMPILER     "i can read ARM64 as C code"
 ⬜ M10 SHIP           "the tool is packaged and ready"
 ```
 

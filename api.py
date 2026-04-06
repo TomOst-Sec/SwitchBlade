@@ -1,13 +1,15 @@
 #!/usr/bin/env python3
 """M5: FastAPI serving all 74 Switch services as JSON."""
-import os, glob
+import os, glob, bisect
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from loader import NSO
 from analyzer import scan_syscalls, get_service_name, target_value
-from cfg import disassemble, find_functions, find_function_bounds, build_cfg, find_xrefs
+from cfg import disassemble, find_functions, find_function_bounds, build_cfg, find_xrefs, domtree
+from scanner import scan_function
+from decompiler import decompile
 
 NSO_DIR = os.environ.get("NSO_DIR", "nso/")
 
@@ -32,6 +34,13 @@ def load_all():
         syscalls = scan_syscalls(nso)
         xrefs = find_xrefs(instructions)
         tv = target_value(name, syscalls)
+        addrs = [i.address for i in instructions]
+        scan_results = []
+        for s, e in bounds:
+            lo = bisect.bisect_left(addrs, s)
+            hi = bisect.bisect_left(addrs, e)
+            hits = scan_function(instructions[lo:hi], s, e)
+            if hits: scan_results.append((s, hits))
         DB[name] = {
             "name": name,
             "size": len(nso.text) + len(nso.rodata) + len(nso.data),
@@ -41,6 +50,7 @@ def load_all():
             "func_map": dict(bounds),
             "syscalls": syscalls,
             "xrefs": xrefs,
+            "scan": scan_results,
         }
     print(f"loaded {len(DB)} services")
 
@@ -127,3 +137,37 @@ def service_syscalls(name: str):
 def service_xrefs(name: str):
     s = get_service(name)
     return [{"from": f"0x{src:x}", "to": f"0x{dst:x}", "type": kind} for src, dst, kind in s["xrefs"]]
+
+
+@app.get("/api/services/{name}/functions/{addr}/domtree")
+def function_domtree(name: str, addr: str):
+    s = get_service(name)
+    start = int(addr, 16)
+    end = s["func_map"].get(start)
+    if end is None:
+        raise HTTPException(404, f"function 0x{start:x} not found")
+    cfg = build_cfg(s["instructions"], start, end)
+    idom = domtree(cfg, start)
+    return {f"0x{n:x}": (f"0x{d:x}" if d is not None else None) for n, d in idom.items()}
+
+
+@app.get("/api/services/{name}/scan")
+def service_scan(name: str):
+    s = get_service(name)
+    return [
+        {"func": f"0x{func:x}", "findings": [
+            {"addr": f"0x{a:x}", "severity": sev, "desc": desc}
+            for a, sev, desc in hits
+        ]}
+        for func, hits in s.get("scan", [])
+    ]
+
+
+@app.get("/api/services/{name}/functions/{addr}/decompile")
+def function_decompile(name: str, addr: str):
+    s = get_service(name)
+    start = int(addr, 16)
+    end = s["func_map"].get(start)
+    if end is None:
+        raise HTTPException(404, f"function 0x{start:x} not found")
+    return decompile(s["instructions"], start, end)
