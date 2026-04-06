@@ -45,16 +45,16 @@ class NSO:  # parser for Nintendo Switch NSO binaries
 if __name__ == "__main__":  # only runs when you execute this file directly
     nso = NSO(sys.argv[1])  # parse the NSO file passed as command line arg
     print(f"{nso.magic}  version={nso.version}  flags={nso.flags}")  # header summary
-    print("=================================================================================")
+    print("=" * 60)  # separator line
     print(f"  compressed: text={nso.text_compressed} rodata={nso.ro_compressed} data={nso.data_compressed}")
-    print("=================================================================================")
+    print("=" * 60)  # separator line
     print(f".text:   {len(nso.text):>10} bytes  mem={nso.text_mem:#x}")  # segment sizes + load addresses
-    print("=================================================================================")
+    print("=" * 60)  # separator line
     print(f".rodata: {len(nso.rodata):>10} bytes  mem={nso.ro_mem:#x}")
-    print("=================================================================================")
+    print("=" * 60)  # separator line
     print(f".data:   {len(nso.data):>10} bytes  mem={nso.data_mem:#x}")
     print("=" * 60)  # separator line
-    
+
     nso.hexdump("text", 0, 80)  # dump first 64 bytes of executable code
 
 
